@@ -18,6 +18,18 @@ type CartLine = {
   topping_ids: number[];
 };
 
+/** Chuẩn hóa để tìm kiếm "mềm": bỏ dấu tiếng Việt + thường + gom khoảng trắng.
+ *  "Trà Sữa" / "trà sữa" / "TRA SUA" -> "tra sua". */
+function normalizeForSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // bỏ dấu thanh + dấu mũ (ơ, ê, â...)
+    .replace(/đ/g, "d") // NFD không tách được đ
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Chọn emoji theo nhóm/tên món cho sinh động */
 function emojiFor(p: Product): string {
   const t = `${p.category || ""} ${p.name}`.toLowerCase();
@@ -134,12 +146,13 @@ export default function SellPage() {
   const cartCount = lines.reduce((s, l) => s + l.qty, 0);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = !q
+    const tokens = normalizeForSearch(query).split(" ").filter(Boolean);
+    const list = !tokens.length
       ? products
       : products.filter((p) => {
-          const hay = `${p.name} ${p.category || ""}`.toLowerCase();
-          return hay.includes(q);
+          const hay = normalizeForSearch(`${p.name} ${p.category || ""}`);
+          // mọi từ trong ô tìm đều phải xuất hiện (không cần đúng thứ tự)
+          return tokens.every((t) => hay.includes(t));
         });
     // Sắp xếp: món bán chạy (30 ngày) lên đầu, bằng nhau thì theo tên
     return [...list].sort(
