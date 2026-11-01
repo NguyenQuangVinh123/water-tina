@@ -53,3 +53,11 @@ export type Expense = {
   date: string;
   created_at: string;
 };
+
+export type Topping = {
+  id: number;
+  name: string;
+  price: number;
+  is_active: boolean;
+  created_at: string;
+};

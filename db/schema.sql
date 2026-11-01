@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Bảng topping riêng (quản lý tập trung, chưa gắn vào đơn)
+CREATE TABLE IF NOT EXISTS toppings (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT        NOT NULL,
+  price      NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_order_items_order   ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created      ON orders(created_at);

@@ -10,6 +10,7 @@ const links = [{ href: "/", label: "Bán hàng" }];
 const adminLinks = [
   { href: "/analytics", label: "Phân tích" },
   { href: "/products", label: "Sản phẩm" },
+  { href: "/toppings", label: "Topping" },
 ];
 
 export default function Nav() {
