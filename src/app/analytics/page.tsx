@@ -15,12 +15,32 @@ type Stats = {
   profit: number;
   topSellers: TopSeller[];
   daily: Daily[];
+  compare: {
+    range: { from: string; to: string };
+    revenue: number;
+    orderCount: number;
+    expenses: number;
+    profit: number;
+  } | null;
 };
 
 function isoDay(d: Date) {
   // Định dạng theo ngày LOCAL (tránh dùng UTC rơi trước 7h sáng VN -> nhầm sang hôm trước)
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** `n` ngày trước so với hiện tại, theo lịch local */
+function daysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return isoDay(d);
+}
+
+/** % thay đổi so với kỳ trước; null khi kỳ trước = 0 (không có cơ sở so) */
+function pct(cur: number, prev: number): number | null {
+  if (!prev) return null;
+  return ((cur - prev) / Math.abs(prev)) * 100;
 }
 
 /** Giá trị ngắn gọn cho nhãn cột: 542 -> "542", 15000 -> "15K", 1200000 -> "1,2TR" */
@@ -96,6 +116,24 @@ export default function AnalyticsPage() {
   if (!ready) return <p className="text-sm text-slate-400">Đang kiểm tra quyền admin...</p>;
 
   const maxDaily = Math.max(1, ...(stats?.daily.map((d) => d.revenue) || [1]));
+  const cmp = stats?.compare || null;
+
+  // Nút chọn nhanh khoảng ngày (theo lịch local VN)
+  const presets = [
+    { label: "Hôm nay", run: () => { const t = isoDay(new Date()); setFrom(t); setTo(t); } },
+    { label: "7 ngày", run: () => { setFrom(daysAgo(6)); setTo(isoDay(new Date())); } },
+    {
+      label: "Tháng này",
+      run: () => {
+        const n = new Date();
+        setFrom(isoDay(new Date(n.getFullYear(), n.getMonth(), 1)));
+        setTo(isoDay(n));
+      },
+    },
+    { label: "Tất cả", run: () => { setFrom(""); setTo(""); } },
+  ];
+  const presetCls =
+    "shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-sky-300 hover:text-sky-700";
 
   return (
     <div className="space-y-6">
@@ -110,19 +148,60 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {presets.map((p) => (
+          <button key={p.label} onClick={p.run} className={presetCls}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {/* Thẻ tổng quan */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card label="Doanh thu" value={stats ? formatVND(stats.revenue) : "—"} tone="sky" />
-        <Card label="Số đơn" value={stats ? String(stats.orderCount) : "—"} tone="slate" />
-        <Card label="Chi tiêu" value={stats ? formatVND(stats.expenses) : "—"} tone="amber" />
+        <Card
+          label="Doanh thu"
+          value={stats ? formatVND(stats.revenue) : "—"}
+          tone="sky"
+          delta={stats && cmp ? pct(stats.revenue, cmp.revenue) : null}
+          higherIsGood
+          prevLabel={cmp ? `Kỳ trước: ${formatVND(cmp.revenue)}` : undefined}
+        />
+        <Card
+          label="Số đơn"
+          value={stats ? String(stats.orderCount) : "—"}
+          tone="slate"
+          delta={stats && cmp ? pct(stats.orderCount, cmp.orderCount) : null}
+          higherIsGood
+          prevLabel={cmp ? `Kỳ trước: ${cmp.orderCount} đơn` : undefined}
+        />
+        <Card
+          label="Chi tiêu"
+          value={stats ? formatVND(stats.expenses) : "—"}
+          tone="amber"
+          delta={stats && cmp ? pct(stats.expenses, cmp.expenses) : null}
+          higherIsGood={false}
+          prevLabel={cmp ? `Kỳ trước: ${formatVND(cmp.expenses)}` : undefined}
+        />
         <Card
           label="Lợi nhuận"
           value={stats ? formatVND(stats.profit) : "—"}
           tone={stats && stats.profit >= 0 ? "emerald" : "red"}
+          delta={
+            stats && cmp && (cmp.profit > 0 || stats.profit !== cmp.profit)
+              ? pct(stats.profit, cmp.profit)
+              : null
+          }
+          higherIsGood
+          prevLabel={cmp ? `Kỳ trước: ${formatVND(cmp.profit)}` : undefined}
         />
       </div>
+      {cmp && (
+        <p className="-mt-3 text-xs text-slate-400">
+          So với kỳ trước ({cmp.range.from} → {cmp.range.to})
+        </p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Top sellers */}
@@ -251,11 +330,37 @@ const tones: Record<string, string> = {
   red: "text-red-700",
 };
 
-function Card({ label, value, tone }: { label: string; value: string; tone: string }) {
+function Card({
+  label,
+  value,
+  tone,
+  delta,
+  higherIsGood = true,
+  prevLabel,
+}: {
+  label: string;
+  value: string;
+  tone: string;
+  delta?: number | null;
+  higherIsGood?: boolean;
+  prevLabel?: string;
+}) {
+  const up = (delta ?? 0) > 0;
+  const good = up === higherIsGood;
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`mt-1 text-xl font-bold ${tones[tone] || tones.slate}`}>{value}</div>
+      {delta != null && (
+        <div
+          className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+            good ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+          }`}
+          title={prevLabel}
+        >
+          {up ? "▲" : "▼"} {Math.abs(delta).toFixed(delta < -10 || delta > 10 ? 0 : 1)}%
+        </div>
+      )}
     </div>
   );
 }

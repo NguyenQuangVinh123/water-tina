@@ -6,7 +6,8 @@ const TZ = "Asia/Ho_Chi_Minh";
 /**
  * GET /api/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD
  * Trả về: tổng doanh thu, số đơn, tổng chi, lợi nhuận,
- * top sản phẩm bán chạy, và chuỗi doanh thu theo ngày (lấp đầy mọi ngày, giờ VN).
+ * top sản phẩm bán chạy, chuỗi doanh thu theo ngày (lấp đầy mọi ngày, giờ VN),
+ * và `compare` — số liệu kỳ trước liền kề cùng độ dài để tính % tăng/giảm.
  */
 export async function GET(request: Request) {
   try {
@@ -105,6 +106,43 @@ export async function GET(request: Request) {
 
     const revenue = Number(revRow?.revenue || 0);
     const expenses = Number(expRow?.expenses || 0);
+
+    // Kỳ trước liền kề, cùng độ dài (chỉ khi có from&to): [from - N, from - 1]
+    let compare = null;
+    if (from && to) {
+      const f = new Date(`${from}T00:00:00`);
+      const t = new Date(`${to}T00:00:00`);
+      const dayMs = 864e5;
+      const spanDays =
+        Math.round((t.getTime() - f.getTime()) / dayMs) + 1 || 1;
+      const shift = (d: Date, n: number) =>
+        new Date(d.getTime() - n * dayMs).toISOString().slice(0, 10);
+      const pFrom = shift(f, spanDays);
+      const pTo = shift(f, 1);
+
+      const [cRev] = await sql.query(
+        `SELECT COALESCE(SUM(total),0)::float AS revenue, COUNT(*)::int AS orders
+         FROM orders o
+         WHERE o.created_at >= ($1::timestamp AT TIME ZONE '${TZ}')
+           AND o.created_at < (($2::timestamp + interval '1 day') AT TIME ZONE '${TZ}')`,
+        [pFrom, pTo]
+      );
+      const [cExp] = await sql.query(
+        `SELECT COALESCE(SUM(amount),0)::float AS expenses
+         FROM expenses e WHERE e.date >= $1::date AND e.date <= $2::date`,
+        [pFrom, pTo]
+      );
+      const cRevenue = Number(cRev?.revenue || 0);
+      const cExpenses = Number(cExp?.expenses || 0);
+      compare = {
+        range: { from: pFrom, to: pTo },
+        revenue: cRevenue,
+        orderCount: Number(cRev?.orders || 0),
+        expenses: cExpenses,
+        profit: cRevenue - cExpenses,
+      };
+    }
+
     return NextResponse.json({
       range: { from, to },
       revenue,
@@ -113,6 +151,7 @@ export async function GET(request: Request) {
       profit: revenue - expenses,
       topSellers,
       daily,
+      compare,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
