@@ -121,11 +121,18 @@ export default function SellPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((p) => {
-      const hay = `${p.name} ${p.category || ""}`.toLowerCase();
-      return hay.includes(q);
-    });
+    const list = !q
+      ? products
+      : products.filter((p) => {
+          const hay = `${p.name} ${p.category || ""}`.toLowerCase();
+          return hay.includes(q);
+        });
+    // Sắp xếp: món bán chạy (30 ngày) lên đầu, bằng nhau thì theo tên
+    return [...list].sort(
+      (a, b) =>
+        (b.sold_count || 0) - (a.sold_count || 0) ||
+        a.name.localeCompare(b.name, "vi")
+    );
   }, [products, query]);
 
   const total = useMemo(
@@ -247,11 +254,21 @@ export default function SellPage() {
                           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-indigo-100 text-2xl">
                             {emojiFor(p)}
                           </div>
-                          {totalQty > 0 && (
-                            <span className="rounded-full bg-sky-600 px-2 py-0.5 text-xs font-bold text-white">
-                              {totalQty}
-                            </span>
-                          )}
+                          <div className="flex flex-col items-end gap-1">
+                            {totalQty > 0 && (
+                              <span className="rounded-full bg-sky-600 px-2 py-0.5 text-xs font-bold text-white">
+                                {totalQty}
+                              </span>
+                            )}
+                            {(p.sold_count || 0) > 0 && (
+                              <span
+                                className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
+                                title={`Đã bán ${p.sold_count} ly trong 30 ngày`}
+                              >
+                                🔥 {p.sold_count}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="text-sm font-bold leading-tight text-slate-800">
                           {p.name}

@@ -20,13 +20,22 @@ function normalizeSizes(input: any): { sizes: SizeOption[]; minPrice: number | n
   return { sizes, minPrice };
 }
 
-/** GET /api/products -> danh sách sản phẩm */
+/** GET /api/products -> danh sách sản phẩm (kèm sold_count = tổng qty đã bán 30 ngày gần nhất) */
 export async function GET() {
   try {
     const sql = getSql();
     const rows = await sql.query(
-      `SELECT id, name, price, category, sizes, is_active, created_at
-       FROM products ORDER BY name`
+      `SELECT p.id, p.name, p.price, p.category, p.sizes, p.is_active, p.created_at,
+              COALESCE(s.sold, 0)::int AS sold_count
+       FROM products p
+       LEFT JOIN (
+         SELECT oi.product_id, SUM(oi.qty) AS sold
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE o.created_at >= now() - interval '30 days'
+         GROUP BY oi.product_id
+       ) s ON s.product_id = p.id
+       ORDER BY p.name`
     );
     return NextResponse.json(rows);
   } catch (e: any) {

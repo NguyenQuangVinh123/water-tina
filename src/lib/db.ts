@@ -27,6 +27,8 @@ export type Product = {
   sizes: SizeOption[];
   is_active: boolean;
   created_at: string;
+  /** Tổng số lượng đã bán trong 30 ngày gần nhất (do API /api/products bổ sung) */
+  sold_count?: number;
 };
 
 export type Order = {
