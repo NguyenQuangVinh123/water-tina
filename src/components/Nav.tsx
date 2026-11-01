@@ -31,7 +31,7 @@ export default function Nav() {
   const all = admin ? [...links, ...adminLinks] : links;
 
   const cls = (href: string) =>
-    `rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+    `shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
       pathname === href
         ? "bg-sky-600 text-white shadow-sm"
         : "text-slate-600 hover:bg-slate-100"
@@ -39,14 +39,17 @@ export default function Nav() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
-        <Link href="/" className="mr-2 flex items-center gap-1.5 text-lg font-extrabold tracking-tight text-slate-800">
-          <span className="text-xl">🥤</span>
-          <span>
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-1.5 text-base font-extrabold tracking-tight text-slate-800 sm:text-lg"
+        >
+          <span className="text-lg sm:text-xl">🥤</span>
+          <span className="hidden sm:inline">
             Water<span className="text-sky-600">Tina</span>
           </span>
         </Link>
-        <nav className="flex flex-1 flex-wrap items-center gap-1">
+        <nav className="flex flex-1 flex-nowrap items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {all.map((l) => (
             <Link key={l.href} href={l.href} className={cls(l.href)}>
               {l.label}
@@ -56,14 +59,15 @@ export default function Nav() {
         {admin ? (
           <button
             onClick={logout}
-            className="rounded-full border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="shrink-0 whitespace-nowrap rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 sm:px-3.5 sm:py-1.5"
           >
-            Đăng xuất admin
+            <span className="sm:hidden">Thoát</span>
+            <span className="hidden sm:inline">Đăng xuất admin</span>
           </button>
         ) : (
           <Link
             href="/admin"
-            className="rounded-full border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="shrink-0 whitespace-nowrap rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 sm:px-3.5 sm:py-1.5"
           >
             🔒 Admin
           </Link>

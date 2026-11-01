@@ -51,6 +51,7 @@ export default function SellPage() {
   const [loaded, setLoaded] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [picker, setPicker] = useState<Product | null>(null);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -166,6 +167,7 @@ export default function SellPage() {
       setCart({});
       setNote("");
       setReloadToken((t) => t + 1);
+      setMobileCartOpen(false);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -174,7 +176,7 @@ export default function SellPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24 lg:pb-0">
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Menu */}
         <section className="flex min-w-0 flex-col">
@@ -355,8 +357,8 @@ export default function SellPage() {
           )}
         </section>
 
-        {/* Giỏ hàng */}
-        <aside>
+        {/* Giỏ hàng (desktop) */}
+        <aside className="hidden lg:block">
           <div className="sticky top-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between bg-gradient-to-r from-sky-600 to-indigo-600 px-4 py-3 text-white">
               <h2 className="font-bold">Giỏ hàng</h2>
@@ -458,6 +460,143 @@ export default function SellPage() {
         toppings={toppings}
         reloadToken={reloadToken}
       />
+
+      {/* Nút giỏ hàng nổi (mobile) */}
+      <button
+        onClick={() => setMobileCartOpen(true)}
+        className="fixed inset-x-3 bottom-3 z-30 flex items-center justify-between rounded-2xl bg-sky-600 px-4 py-3 text-white shadow-xl transition active:scale-[.99] lg:hidden"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold">
+          <span className="text-lg">🛒</span>
+          Giỏ hàng
+          {cartCount > 0 && (
+            <span className="rounded-full bg-white/25 px-2 py-0.5 text-xs font-semibold">
+              {cartCount} món
+            </span>
+          )}
+        </span>
+        <span className="text-base font-extrabold">{formatVND(total)}</span>
+      </button>
+
+      {/* Bottom sheet giỏ hàng (mobile) */}
+      {mobileCartOpen && (
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          onClick={() => setMobileCartOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between bg-gradient-to-r from-sky-600 to-indigo-600 px-4 py-3 text-white">
+              <h2 className="font-bold">Giỏ hàng</h2>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
+                  {cartCount} món
+                </span>
+                <button
+                  onClick={() => setMobileCartOpen(false)}
+                  aria-label="Đóng"
+                  className="rounded-full p-1 text-white/90 hover:bg-white/20"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {cartCount === 0 ? (
+                <p className="py-6 text-center text-sm text-slate-400">
+                  Chưa chọn món nào 🙃
+                </p>
+              ) : (
+                <ul className="mb-3 space-y-2 text-sm">
+                  {lines.map((l) => {
+                    const p = products.find((x) => x.id === l.product_id);
+                    if (!p) return null;
+                    const unit = priceOfLine(l);
+                    const tNames = l.topping_ids
+                      .map((id) => toppingById.get(id)?.name)
+                      .filter(Boolean) as string[];
+                    return (
+                      <li
+                        key={lineKey(l.product_id, l.size, l.topping_ids)}
+                        className="flex items-start justify-between gap-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-slate-700">
+                            {p.name}
+                          </div>
+                          {l.size && (
+                            <div className="text-xs text-slate-400">
+                              Size: {l.size}
+                            </div>
+                          )}
+                          {tNames.length > 0 && (
+                            <div className="text-xs text-amber-700">
+                              🍮 {tNames.join(", ")}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() =>
+                              add(l.product_id, l.size, l.topping_ids, -1)
+                            }
+                            className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center font-bold">{l.qty}</span>
+                          <button
+                            onClick={() =>
+                              add(l.product_id, l.size, l.topping_ids, 1)
+                            }
+                            className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="w-20 text-right font-medium text-slate-700">
+                          {formatVND(unit * l.qty)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <div className="mb-3 flex items-center justify-between border-t border-dashed pt-3 text-base font-extrabold text-slate-900">
+                <span>Tổng</span>
+                <span className="text-sky-700">{formatVND(total)}</span>
+              </div>
+
+              <input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Ghi chú"
+                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              />
+
+              {ok && (
+                <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                  {ok}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t border-slate-100 p-4">
+              <button
+                onClick={checkout}
+                disabled={saving || cartCount === 0}
+                className="w-full rounded-xl bg-sky-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? "Đang lưu..." : `Chốt đơn · ${formatVND(total)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {picker && (
         <ItemPickerModal
