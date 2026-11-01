@@ -298,80 +298,80 @@ export default function SellPage() {
                           </div>
                         )}
 
-                        {hasSizes ? (
-                          <div className="mt-3 space-y-1.5">
-                            {p.sizes.map((sz: SizeOption) => {
-                              const q = qtyOfQuick(p.id, sz.name);
-                              return (
-                                <button
-                                  key={sz.name}
-                                  onClick={() => add(p.id, sz.name, [], 1)}
-                                  className={`flex min-h-[40px] w-full items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                    q
-                                      ? "border-sky-500 bg-sky-50 text-sky-700"
-                                      : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    {sz.name}
-                                    {q > 0 && (
-                                      <span className="rounded-full bg-sky-600 px-1.5 text-[11px] font-bold leading-4 text-white">
-                                        {q}
-                                      </span>
-                                    )}
-                                  </span>
-                                  <span className="font-bold">
-                                    {formatVND(sz.price)}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="mt-auto flex items-center justify-between pt-3">
-                            <span className="text-sm font-bold text-slate-900">
-                              {formatVND(p.price)}
-                            </span>
-                            {qtyOfQuick(p.id, null) === 0 ? (
-                              <button
-                                onClick={() => add(p.id, null, [], 1)}
-                                className="min-h-[40px] rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
-                              >
-                                Thêm
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  onClick={() => add(p.id, null, [], -1)}
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 hover:bg-slate-200"
-                                >
-                                  −
-                                </button>
-                                <span className="w-6 text-center text-sm font-bold">
-                                  {qtyOfQuick(p.id, null)}
-                                </span>
+                        {/* Cụm hành động: ghim đáy card, khoảng cách giữa các nút đều nhau */}
+                        <div className="mt-auto space-y-2.5 pt-3">
+                          {hasSizes ? (
+                            <div className="space-y-1.5">
+                              {p.sizes.map((sz: SizeOption) => {
+                                const q = qtyOfQuick(p.id, sz.name);
+                                return (
+                                  <button
+                                    key={sz.name}
+                                    onClick={() => add(p.id, sz.name, [], 1)}
+                                    className={`flex min-h-[40px] w-full items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                      q
+                                        ? "border-sky-500 bg-sky-50 text-sky-700"
+                                        : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      {sz.name}
+                                      {q > 0 && (
+                                        <span className="rounded-full bg-sky-600 px-1.5 text-[11px] font-bold leading-4 text-white">
+                                          {q}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="font-bold">
+                                      {formatVND(sz.price)}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold text-slate-900">
+                                {formatVND(p.price)}
+                              </span>
+                              {qtyOfQuick(p.id, null) === 0 ? (
                                 <button
                                   onClick={() => add(p.id, null, [], 1)}
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-xl leading-none text-white hover:bg-sky-700"
+                                  className="min-h-[40px] rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
                                 >
-                                  +
+                                  Thêm
                                 </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => add(p.id, null, [], -1)}
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 hover:bg-slate-200"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-6 text-center text-sm font-bold">
+                                    {qtyOfQuick(p.id, null)}
+                                  </span>
+                                  <button
+                                    onClick={() => add(p.id, null, [], 1)}
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-xl leading-none text-white hover:bg-sky-700"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-                        {/* Nút mở modal chọn topping (và size nếu có) */}
-                        {toppings.length > 0 && (
-                          <button
-                            onClick={() => setPicker(p)}
-                            className={`mt-2 flex min-h-[40px] w-full items-center justify-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 ${
-                              hasSizes ? "" : "mt-auto"
-                            }`}
-                          >
-                            🍮 Thêm topping
-                          </button>
-                        )}
+                          {toppings.length > 0 && (
+                            <button
+                              onClick={() => setPicker(p)}
+                              className="flex min-h-[40px] w-full items-center justify-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                            >
+                              🍮 Thêm topping
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
