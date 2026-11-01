@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     );
     const [expRow] = await sql.query(
       `SELECT COALESCE(SUM(amount),0)::float AS expenses
-       FROM expenses ${expFilter.where}`,
+       FROM expenses e ${expFilter.where}`,
       expFilter.params
     );
     const topSellers = await sql.query(
