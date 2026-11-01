@@ -116,7 +116,7 @@ export default function ToppingsPage() {
             Đang bán
           </label>
           <button
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            className="min-h-[44px] rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
             disabled={saving}
           >
             {saving ? "Đang lưu..." : form.id ? "Cập nhật" : "Thêm"}
@@ -161,25 +161,27 @@ export default function ToppingsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <button
-                    onClick={() =>
-                      setForm({
-                        id: t.id,
-                        name: t.name,
-                        price: String(t.price),
-                        is_active: t.is_active,
-                      })
-                    }
-                    className="mr-3 text-sky-600 hover:underline"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => remove(t.id)}
-                    className="text-red-500 hover:underline"
-                  >
-                    Xóa
-                  </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() =>
+                        setForm({
+                          id: t.id,
+                          name: t.name,
+                          price: String(t.price),
+                          is_active: t.is_active,
+                        })
+                      }
+                      className="min-h-[40px] rounded-lg px-3 py-1.5 text-sm font-medium text-sky-600 hover:bg-sky-50"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => remove(t.id)}
+                      className="min-h-[40px] rounded-lg px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50"
+                    >
+                      Xóa
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

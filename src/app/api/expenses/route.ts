@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const sql = getSql();
     const [row] = await sql.query(
       `INSERT INTO expenses (amount, description, date)
-       VALUES ($1, $2, COALESCE($3, CURRENT_DATE))
+       VALUES ($1, $2, COALESCE($3, (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date))
        RETURNING id, amount, description, date, created_at`,
       [Number(amount), description || null, date || null]
     );

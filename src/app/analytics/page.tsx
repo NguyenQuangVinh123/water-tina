@@ -18,7 +18,9 @@ type Stats = {
 };
 
 function isoDay(d: Date) {
-  return d.toISOString().slice(0, 10);
+  // Định dạng theo ngày LOCAL (tránh dùng UTC rơi trước 7h sáng VN -> nhầm sang hôm trước)
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 export default function AnalyticsPage() {
@@ -89,11 +91,11 @@ export default function AnalyticsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-lg font-bold text-slate-800">📊 Phân tích doanh thu</h1>
         <div className="flex items-center gap-2 text-sm">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-1" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Từ ngày"
+            className="min-h-[40px] rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
           <span className="text-slate-400">→</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-1" />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Đến ngày"
+            className="min-h-[40px] rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
         </div>
       </div>
 
@@ -182,14 +184,15 @@ export default function AnalyticsPage() {
         <form onSubmit={addExpense} className="mb-4 flex flex-wrap gap-2">
           <input
             type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-            placeholder="Số tiền" className="w-40 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Số tiền" inputMode="numeric"
+            className="w-32 flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:flex-none sm:w-40 sm:py-2 sm:text-sm"
           />
           <input
             value={desc} onChange={(e) => setDesc(e.target.value)}
             placeholder="Nội dung (tiền điện, nguyên liệu...)"
-            className="min-w-[200px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="min-w-0 flex-[2] rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:flex-1 sm:py-2 sm:text-sm"
           />
-          <button className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">
+          <button className="min-h-[44px] w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 sm:w-auto">
             + Thêm
           </button>
         </form>
@@ -198,12 +201,13 @@ export default function AnalyticsPage() {
         ) : (
           <ul className="divide-y divide-slate-100 text-sm">
             {expenses.map((x) => (
-              <li key={x.id} className="flex items-center justify-between py-2">
-                <span className="text-slate-700">{x.description || "Chi tiêu"}</span>
-                <span className="flex items-center gap-3">
-                  <span className="text-slate-400">{formatDate(x.date)}</span>
+              <li key={x.id} className="flex items-center justify-between gap-2 py-2">
+                <span className="min-w-0 flex-1 truncate text-slate-700">{x.description || "Chi tiêu"}</span>
+                <span className="flex shrink-0 items-center gap-2 sm:gap-3">
+                  <span className="text-xs text-slate-400 sm:text-sm">{formatDate(x.date)}</span>
                   <span className="font-medium text-amber-700">{formatVND(x.amount)}</span>
-                  <button onClick={() => delExpense(x.id)} className="text-slate-400 hover:text-red-500">✕</button>
+                  <button onClick={() => delExpense(x.id)} aria-label="Xóa khoản chi"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500">✕</button>
                 </span>
               </li>
             ))}

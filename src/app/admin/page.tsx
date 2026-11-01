@@ -47,12 +47,13 @@ export default function AdminLoginPage() {
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder="Key secret"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            autoComplete="current-password"
+            className="min-h-[44px] w-full rounded-lg border border-slate-300 px-3 py-2 text-base outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:text-sm"
           />
           <button
             type="submit"
             disabled={loading || !key}
-            className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            className="min-h-[44px] w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
           >
             {loading ? "Đang kiểm tra..." : "Đăng nhập"}
           </button>
