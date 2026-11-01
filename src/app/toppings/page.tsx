@@ -95,7 +95,7 @@ export default function ToppingsPage() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="Tên topping (Trân châu đen, Thạch...)"
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm sm:col-span-2"
           />
           <input
             type="number"
@@ -103,7 +103,7 @@ export default function ToppingsPage() {
             onChange={(e) => setForm({ ...form, price: e.target.value })}
             placeholder="Giá (+)"
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
           />
         </div>
         <div className="mt-3 flex items-center gap-4">
@@ -138,8 +138,8 @@ export default function ToppingsPage() {
       )}
 
       {/* Danh sách */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[480px] text-sm">
           <thead className="bg-slate-50 text-left text-slate-500">
             <tr>
               <th className="px-4 py-2 font-medium">Tên</th>

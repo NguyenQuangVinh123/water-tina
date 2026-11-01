@@ -75,6 +75,18 @@ export default function OrderEditModal({
     setCart(init);
   }, [order]);
 
+  // Escape để đóng + khóa scroll nền khi mở modal
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", h);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", h);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
   const addQty = (key: string, delta: number) =>
     setCart((c) => {
       const line = c[key];
@@ -135,31 +147,37 @@ export default function OrderEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+        className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Sửa đơn #{order.id}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+          <h2 className="text-base font-bold text-slate-800">Sửa đơn #{order.id}</h2>
+          <button
+            onClick={onClose}
+            aria-label="Đóng"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
             ✕
           </button>
         </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
 
         <input
           value={customer}
           onChange={(e) => setCustomer(e.target.value)}
           placeholder="Tên khách"
-          className="mb-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mb-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
         />
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Ghi chú"
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
         />
 
         {Object.keys(cart).length === 0 ? (
@@ -200,16 +218,16 @@ export default function OrderEditModal({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => addQty(key, -1)}
-                      className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 hover:bg-slate-200"
                     >
                       −
                     </button>
-                    <span className="w-5 text-center text-sm font-bold">
+                    <span className="w-6 text-center text-sm font-bold">
                       {l.qty}
                     </span>
                     <button
                       onClick={() => addQty(key, 1)}
-                      className="h-6 w-6 rounded-md bg-sky-600 text-white hover:bg-sky-700"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-xl leading-none text-white hover:bg-sky-700"
                     >
                       +
                     </button>
@@ -227,18 +245,19 @@ export default function OrderEditModal({
         </div>
 
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </div>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="flex shrink-0 gap-2 border-t border-slate-100 p-4">
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:flex-none sm:px-5 sm:py-2"
           >
             Hủy
           </button>
           <button
             onClick={save}
             disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            className="flex-1 rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 sm:flex-none sm:px-5 sm:py-2"
           >
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>

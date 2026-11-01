@@ -74,6 +74,19 @@ export default function SellPage() {
       .finally(() => setLoaded(true));
   }, []);
 
+  // Khóa scroll nền khi mở bottom sheet giỏ hàng (mobile)
+  useEffect(() => {
+    if (!mobileCartOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const h = (e: KeyboardEvent) => e.key === "Escape" && setMobileCartOpen(false);
+    window.addEventListener("keydown", h);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", h);
+    };
+  }, [mobileCartOpen]);
+
   // map nhanh tra topping theo id
   const toppingById = useMemo(() => {
     const m = new Map<number, Topping>();
@@ -180,11 +193,16 @@ export default function SellPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Menu */}
         <section className="flex min-w-0 flex-col">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-extrabold tracking-tight text-slate-800">
-              Chọn đồ uống
-            </h1>
-            <div className="relative ml-auto min-w-[180px] flex-1 sm:max-w-xs">
+          <div className="mb-3">
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-800">
+                Chọn đồ uống
+              </h1>
+              <span className="shrink-0 text-sm text-slate-400">
+                {filtered.length} món
+              </span>
+            </div>
+            <div className="relative mt-2">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 🔍
               </span>
@@ -192,20 +210,19 @@ export default function SellPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Tìm món..."
-                className="w-full rounded-full border border-slate-200 bg-white py-1.5 pl-9 pr-8 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-9 pr-9 text-base outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:py-1.5 sm:text-sm"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
                   aria-label="Xóa tìm kiếm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 >
                   ✕
                 </button>
               )}
             </div>
-            <span className="text-sm text-slate-400">{filtered.length} món</span>
           </div>
 
           {error && (
@@ -289,7 +306,7 @@ export default function SellPage() {
                                 <button
                                   key={sz.name}
                                   onClick={() => add(p.id, sz.name, [], 1)}
-                                  className={`rounded-lg border px-2 py-1 text-xs font-medium transition ${
+                                  className={`min-h-[40px] rounded-lg border px-3 py-2 text-sm font-medium transition ${
                                     q
                                       ? "border-sky-500 bg-sky-50 text-sky-700"
                                       : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
@@ -311,7 +328,7 @@ export default function SellPage() {
                             {qtyOfQuick(p.id, null) === 0 ? (
                               <button
                                 onClick={() => add(p.id, null, [], 1)}
-                                className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+                                className="min-h-[40px] rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
                               >
                                 Thêm
                               </button>
@@ -319,16 +336,16 @@ export default function SellPage() {
                               <div className="flex items-center gap-1.5">
                                 <button
                                   onClick={() => add(p.id, null, [], -1)}
-                                  className="h-7 w-7 rounded-lg bg-slate-100 text-lg leading-none text-slate-600 hover:bg-slate-200"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xl leading-none text-slate-600 hover:bg-slate-200"
                                 >
                                   −
                                 </button>
-                                <span className="w-5 text-center text-sm font-bold">
+                                <span className="w-6 text-center text-sm font-bold">
                                   {qtyOfQuick(p.id, null)}
                                 </span>
                                 <button
                                   onClick={() => add(p.id, null, [], 1)}
-                                  className="h-7 w-7 rounded-lg bg-sky-600 text-lg leading-none text-white hover:bg-sky-700"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-xl leading-none text-white hover:bg-sky-700"
                                 >
                                   +
                                 </button>
@@ -341,7 +358,7 @@ export default function SellPage() {
                         {toppings.length > 0 && (
                           <button
                             onClick={() => setPicker(p)}
-                            className={`mt-2 self-start rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 ${
+                            className={`mt-2 flex min-h-[40px] items-center self-start rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 ${
                               hasSizes ? "" : "mt-auto"
                             }`}
                           >
@@ -434,7 +451,7 @@ export default function SellPage() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Ghi chú"
-                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-base outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:text-sm"
               />
 
               <button
@@ -575,7 +592,7 @@ export default function SellPage() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Ghi chú"
-                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-base outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:text-sm"
               />
 
               {ok && (

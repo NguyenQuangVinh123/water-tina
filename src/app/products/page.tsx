@@ -144,7 +144,7 @@ export default function ProductsPage() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="Tên món"
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm sm:col-span-2"
           />
           {!form.hasSizes && (
             <input
@@ -152,14 +152,14 @@ export default function ProductsPage() {
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
               placeholder="Giá bán"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
             />
           )}
           <input
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
             placeholder="Nhóm (Trà, Soda...)"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
           />
         </div>
 
@@ -190,14 +190,14 @@ export default function ProductsPage() {
                     value={s.name}
                     onChange={(e) => setSize(i, { name: e.target.value })}
                     placeholder="Tên size (Nhỏ/Lớn...)"
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-base sm:text-sm"
                   />
                   <input
                     type="number"
                     value={String(s.price)}
                     onChange={(e) => setSize(i, { price: Number(e.target.value) })}
                     placeholder="Giá"
-                    className="w-28 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+                    className="w-28 rounded-lg border border-slate-300 px-3 py-1.5 text-base sm:text-sm"
                   />
                   <button
                     type="button"
@@ -251,8 +251,8 @@ export default function ProductsPage() {
       )}
 
       {/* Danh sách */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-slate-50 text-left text-slate-500">
             <tr>
               <th className="px-4 py-2 font-medium">Tên</th>
