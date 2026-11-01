@@ -299,23 +299,30 @@ export default function SellPage() {
                         )}
 
                         {hasSizes ? (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
+                          <div className="mt-3 space-y-1.5">
                             {p.sizes.map((sz: SizeOption) => {
                               const q = qtyOfQuick(p.id, sz.name);
                               return (
                                 <button
                                   key={sz.name}
                                   onClick={() => add(p.id, sz.name, [], 1)}
-                                  className={`min-h-[40px] rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                  className={`flex min-h-[40px] w-full items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition ${
                                     q
                                       ? "border-sky-500 bg-sky-50 text-sky-700"
                                       : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
                                   }`}
                                 >
-                                  {sz.name} · {formatVND(sz.price)}
-                                  {q > 0 && (
-                                    <span className="ml-1 font-bold">×{q}</span>
-                                  )}
+                                  <span className="flex items-center gap-1.5">
+                                    {sz.name}
+                                    {q > 0 && (
+                                      <span className="rounded-full bg-sky-600 px-1.5 text-[11px] font-bold leading-4 text-white">
+                                        {q}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="font-bold">
+                                    {formatVND(sz.price)}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -358,7 +365,7 @@ export default function SellPage() {
                         {toppings.length > 0 && (
                           <button
                             onClick={() => setPicker(p)}
-                            className={`mt-2 flex min-h-[40px] items-center self-start rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 ${
+                            className={`mt-2 flex min-h-[40px] w-full items-center justify-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 ${
                               hasSizes ? "" : "mt-auto"
                             }`}
                           >
