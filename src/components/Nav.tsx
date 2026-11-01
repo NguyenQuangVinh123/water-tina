@@ -5,10 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAdminKey, clearAdminKey } from "@/lib/adminClient";
 
-const links = [
-  { href: "/", label: "Bán hàng" },
-  { href: "/orders", label: "Đơn hàng" },
-];
+const links = [{ href: "/", label: "Bán hàng" }];
 
 const adminLinks = [
   { href: "/analytics", label: "Phân tích" },
@@ -33,17 +30,20 @@ export default function Nav() {
   const all = admin ? [...links, ...adminLinks] : links;
 
   const cls = (href: string) =>
-    `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+    `rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
       pathname === href
-        ? "bg-sky-600 text-white"
-        : "text-slate-700 hover:bg-slate-100"
+        ? "bg-sky-600 text-white shadow-sm"
+        : "text-slate-600 hover:bg-slate-100"
     }`;
 
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
-        <Link href="/" className="mr-2 text-lg font-bold text-sky-700">
-          🥤 WaterTina
+    <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
+        <Link href="/" className="mr-2 flex items-center gap-1.5 text-lg font-extrabold tracking-tight text-slate-800">
+          <span className="text-xl">🥤</span>
+          <span>
+            Water<span className="text-sky-600">Tina</span>
+          </span>
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-1">
           {all.map((l) => (
@@ -55,14 +55,14 @@ export default function Nav() {
         {admin ? (
           <button
             onClick={logout}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Đăng xuất admin
           </button>
         ) : (
           <Link
             href="/admin"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             🔒 Admin
           </Link>
