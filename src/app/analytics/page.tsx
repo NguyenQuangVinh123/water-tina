@@ -147,23 +147,30 @@ export default function AnalyticsPage() {
           {!stats || stats.daily.length === 0 ? (
             <p className="text-sm text-slate-400">Chưa có dữ liệu.</p>
           ) : (
-            <div className="flex h-40 items-end gap-1 border-b border-slate-100">
-              {stats.daily.map((d) => (
-                <div
-                  key={d.day}
-                  className="flex flex-1 flex-col items-center justify-end gap-1"
-                  title={`${d.day}: ${formatVND(d.revenue)}`}
-                >
+            <div className="flex items-end gap-1">
+              {stats.daily.map((d) => {
+                const pct = Math.max(2, (d.revenue / maxDaily) * 100);
+                return (
                   <div
-                    className="w-full rounded-t bg-sky-500/80"
-                    style={{
-                      height: `${Math.max(2, (d.revenue / maxDaily) * 100)}%`,
-                      opacity: d.revenue > 0 ? 1 : 0.25,
-                    }}
-                  />
-                  <span className="text-[10px] text-slate-400">{d.day.slice(5)}</span>
-                </div>
-              ))}
+                    key={d.day}
+                    className="flex flex-1 flex-col items-center gap-1"
+                    title={`${d.day}: ${formatVND(d.revenue)}`}
+                  >
+                    <div className="flex h-32 w-full items-end">
+                      <div
+                        className="w-full rounded-t bg-sky-500/80"
+                        style={{
+                          height: `${pct}%`,
+                          opacity: d.revenue > 0 ? 1 : 0.25,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      {d.day.slice(5)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
