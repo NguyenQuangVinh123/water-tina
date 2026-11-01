@@ -34,7 +34,7 @@ function priceOf(p: Product, size: string | null): number {
 export default function SellPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
-  const [customer, setCustomer] = useState("");
+  const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -71,6 +71,16 @@ export default function SellPage() {
   const lines = Object.values(cart);
   const cartCount = lines.reduce((s, l) => s + l.qty, 0);
 
+  // Lọc món theo từ khóa (tên hoặc nhóm, không phân biệt hoa thường / dấu tiếng Việt cơ bản)
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => {
+      const hay = `${p.name} ${p.category || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [products, query]);
+
   const total = useMemo(
     () =>
       lines.reduce((s, l) => {
@@ -96,13 +106,12 @@ export default function SellPage() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_name: customer, note, items }),
+        body: JSON.stringify({ note, items }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Tạo đơn thất bại");
       setOk(`✔ Đã tạo đơn #${data.id} · ${formatVND(data.total)}`);
       setCart({});
-      setCustomer("");
       setNote("");
       setReloadToken((t) => t + 1);
     } catch (e: any) {
@@ -116,12 +125,33 @@ export default function SellPage() {
     <div className="space-y-8">
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Menu */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
+        <section className="flex min-w-0 flex-col">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-extrabold tracking-tight text-slate-800">
               Chọn đồ uống
             </h1>
-            <span className="text-sm text-slate-400">{products.length} món</span>
+            <div className="relative ml-auto min-w-[180px] flex-1 sm:max-w-xs">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                🔍
+              </span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm món..."
+                className="w-full rounded-full border border-slate-200 bg-white py-1.5 pl-9 pr-8 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Xóa tìm kiếm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <span className="text-sm text-slate-400">{filtered.length} món</span>
           </div>
 
           {error && (
@@ -144,8 +174,14 @@ export default function SellPage() {
               Chưa có sản phẩm. Vào <b>Sản phẩm</b> (admin) để thêm.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {products.map((p) => {
+            <div className="lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-1">
+              {filtered.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-10 text-center text-sm text-slate-400">
+                  Không tìm thấy món nào khớp “{query}”.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {filtered.map((p) => {
                 const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
                 const totalQty = hasSizes
                   ? p.sizes.reduce((s, sz) => s + qtyOf(p.id, sz.name), 0)
@@ -230,6 +266,8 @@ export default function SellPage() {
                   </div>
                 );
               })}
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -299,12 +337,6 @@ export default function SellPage() {
                 <span className="text-sky-700">{formatVND(total)}</span>
               </div>
 
-              <input
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                placeholder="Tên khách (không bắt buộc)"
-                className="mb-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-              />
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
