@@ -23,6 +23,17 @@ function isoDay(d: Date) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/** Giá trị ngắn gọn cho nhãn cột: 542 -> "542", 15000 -> "15K", 1200000 -> "1,2TR" */
+function shortVND(n: number): string {
+  if (n <= 0) return "0";
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return `${m % 1 === 0 ? m : m.toFixed(1).replace(".", ",")}TR`;
+  }
+  if (n >= 1000) return `${Math.round(n / 1000)}K`;
+  return String(Math.round(n));
+}
+
 export default function AnalyticsPage() {
   const { ready } = useAdminGuard();
   const [from, setFrom] = useState("");
@@ -145,7 +156,14 @@ export default function AnalyticsPage() {
 
         {/* Doanh thu theo ngày */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 font-semibold text-slate-800">Doanh thu theo ngày</h2>
+          <h2 className="mb-1 flex items-baseline justify-between font-semibold text-slate-800">
+            <span>Doanh thu theo ngày</span>
+            {stats && (
+              <span className="text-sm font-bold text-sky-700">
+                {formatVND(stats.revenue)} · {stats.orderCount} đơn
+              </span>
+            )}
+          </h2>
           {!stats || stats.daily.length === 0 ? (
             <p className="text-sm text-slate-400">Chưa có dữ liệu.</p>
           ) : (
@@ -155,9 +173,16 @@ export default function AnalyticsPage() {
                 return (
                   <div
                     key={d.day}
-                    className="flex flex-1 flex-col items-center gap-1"
+                    className="flex flex-1 flex-col items-center justify-end gap-0.5"
                     title={`${d.day}: ${formatVND(d.revenue)}`}
                   >
+                    <span
+                      className={`text-[9px] font-semibold leading-none sm:text-[10px] ${
+                        d.revenue > 0 ? "text-sky-700" : "text-slate-300"
+                      }`}
+                    >
+                      {shortVND(d.revenue)}
+                    </span>
                     <div className="flex h-32 w-full items-end">
                       <div
                         className="w-full rounded-t bg-sky-500/80"
