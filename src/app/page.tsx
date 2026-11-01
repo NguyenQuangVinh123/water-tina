@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Product, SizeOption } from "@/lib/db";
+import type { Product, SizeOption, Topping } from "@/lib/db";
 import { formatVND } from "@/lib/format";
 import OrdersPanel from "@/components/OrdersPanel";
+import ItemPickerModal, { type PickedLine } from "@/components/ItemPickerModal";
 
-/** Chìa khóa dòng giỏ: món + size */
-const lineKey = (id: number, size: string | null) => `${id}__${size ?? ""}`;
+/** Chìa khóa dòng giỏ: món + size + tập topping (đã sort để nhất quán) */
+const tkey = (ids: number[]) => [...ids].sort((a, b) => a - b).join(",");
+const lineKey = (id: number, size: string | null, toppingIds: number[]) =>
+  `${id}__${size ?? ""}__${tkey(toppingIds)}`;
 
-type CartLine = { product_id: number; size: string | null; qty: number };
+type CartLine = {
+  product_id: number;
+  size: string | null;
+  qty: number;
+  topping_ids: number[];
+};
 
 /** Chọn emoji theo nhóm/tên món cho sinh động */
 function emojiFor(p: Product): string {
@@ -23,7 +31,7 @@ function emojiFor(p: Product): string {
   return "🍹";
 }
 
-function priceOf(p: Product, size: string | null): number {
+function basePriceOf(p: Product, size: string | null): number {
   if (size && Array.isArray(p.sizes)) {
     const s = p.sizes.find((x) => x.name.toLowerCase() === size.toLowerCase());
     if (s) return Number(s.price);
@@ -33,6 +41,7 @@ function priceOf(p: Product, size: string | null): number {
 
 export default function SellPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
@@ -41,15 +50,21 @@ export default function SellPage() {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
+  const [picker, setPicker] = useState<Product | null>(null);
 
   useEffect(() => {
-    fetch("/api/products")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProducts(data.filter((p: Product) => p.is_active));
+    Promise.all([
+      fetch("/api/products").then((r) => r.json()),
+      fetch("/api/toppings").then((r) => r.json()),
+    ])
+      .then(([pData, tData]) => {
+        if (Array.isArray(pData)) {
+          setProducts(pData.filter((p: Product) => p.is_active));
         } else {
-          setError(data?.error || "Không tải được sản phẩm");
+          setError(pData?.error || "Không tải được sản phẩm");
+        }
+        if (Array.isArray(tData)) {
+          setToppings(tData.filter((t: Topping) => t.is_active));
         }
       })
       .catch(() =>
@@ -58,20 +73,52 @@ export default function SellPage() {
       .finally(() => setLoaded(true));
   }, []);
 
-  const add = (product_id: number, size: string | null, d: number) =>
+  // map nhanh tra topping theo id
+  const toppingById = useMemo(() => {
+    const m = new Map<number, Topping>();
+    toppings.forEach((t) => m.set(t.id, t));
+    return m;
+  }, [toppings]);
+
+  const priceOfLine = (l: CartLine): number => {
+    const p = products.find((x) => x.id === l.product_id);
+    if (!p) return 0;
+    const base = basePriceOf(p, l.size);
+    const sum = l.topping_ids.reduce(
+      (s, id) => s + Number(toppingById.get(id)?.price || 0),
+      0
+    );
+    return base + sum;
+  };
+
+  /** Cộng/trừ 1 đơn vị tại dòng (product + size + topping combo) */
+  const add = (
+    product_id: number,
+    size: string | null,
+    topping_ids: number[],
+    d: number
+  ) =>
     setCart((c) => {
-      const key = lineKey(product_id, size);
+      const key = lineKey(product_id, size, topping_ids);
       const qty = (c[key]?.qty || 0) + d;
       const next = { ...c };
       if (qty <= 0) delete next[key];
-      else next[key] = { product_id, size, qty };
+      else
+        next[key] = {
+          product_id,
+          size,
+          qty,
+          topping_ids: [...topping_ids].sort((a, b) => a - b),
+        };
       return next;
     });
+
+  const onPick = (line: PickedLine) =>
+    add(line.product_id, line.size, line.topping_ids, line.qty);
 
   const lines = Object.values(cart);
   const cartCount = lines.reduce((s, l) => s + l.qty, 0);
 
-  // Lọc món theo từ khóa (tên hoặc nhóm, không phân biệt hoa thường / dấu tiếng Việt cơ bản)
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return products;
@@ -82,16 +129,13 @@ export default function SellPage() {
   }, [products, query]);
 
   const total = useMemo(
-    () =>
-      lines.reduce((s, l) => {
-        const p = products.find((x) => x.id === l.product_id);
-        return s + (p ? priceOf(p, l.size) * l.qty : 0);
-      }, 0),
-    [lines, products]
+    () => lines.reduce((s, l) => s + priceOfLine(l) * l.qty, 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lines, products, toppings]
   );
 
-  const qtyOf = (id: number, size: string | null) =>
-    cart[lineKey(id, size)]?.qty || 0;
+  const qtyOfQuick = (id: number, size: string | null) =>
+    cart[lineKey(id, size, [])]?.qty || 0;
 
   async function checkout() {
     setSaving(true);
@@ -102,6 +146,7 @@ export default function SellPage() {
         product_id: l.product_id,
         qty: l.qty,
         size: l.size,
+        topping_ids: l.topping_ids,
       }));
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -177,95 +222,116 @@ export default function SellPage() {
             <div className="lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-1">
               {filtered.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-10 text-center text-sm text-slate-400">
-                  Không tìm thấy món nào khớp “{query}”.
+                  Không tìm thấy món nào khớp "{query}".
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {filtered.map((p) => {
-                const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
-                const totalQty = hasSizes
-                  ? p.sizes.reduce((s, sz) => s + qtyOf(p.id, sz.name), 0)
-                  : qtyOf(p.id, null);
-                return (
-                  <div
-                    key={p.id}
-                    className={`group flex flex-col rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
-                      totalQty ? "border-sky-400 ring-2 ring-sky-100" : "border-slate-200"
-                    }`}
-                  >
-                    <div className="mb-2 flex items-start justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-indigo-100 text-2xl">
-                        {emojiFor(p)}
-                      </div>
-                      {totalQty > 0 && (
-                        <span className="rounded-full bg-sky-600 px-2 py-0.5 text-xs font-bold text-white">
-                          {totalQty}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm font-bold leading-tight text-slate-800">
-                      {p.name}
-                    </div>
-                    {p.category && (
-                      <div className="text-xs text-slate-400">{p.category}</div>
-                    )}
-
-                    {hasSizes ? (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {p.sizes.map((sz: SizeOption) => {
-                          const q = qtyOf(p.id, sz.name);
-                          return (
-                            <button
-                              key={sz.name}
-                              onClick={() => add(p.id, sz.name, q ? 1 : 1)}
-                              className={`rounded-lg border px-2 py-1 text-xs font-medium transition ${
-                                q
-                                  ? "border-sky-500 bg-sky-50 text-sky-700"
-                                  : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
-                              }`}
-                            >
-                              {sz.name} · {formatVND(sz.price)}
-                              {q > 0 && <span className="ml-1 font-bold">×{q}</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="mt-auto flex items-center justify-between pt-3">
-                        <span className="text-sm font-bold text-slate-900">
-                          {formatVND(p.price)}
-                        </span>
-                        {qtyOf(p.id, null) === 0 ? (
-                          <button
-                            onClick={() => add(p.id, null, 1)}
-                            className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700"
-                          >
-                            Thêm
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => add(p.id, null, -1)}
-                              className="h-7 w-7 rounded-lg bg-slate-100 text-lg leading-none text-slate-600 hover:bg-slate-200"
-                            >
-                              −
-                            </button>
-                            <span className="w-5 text-center text-sm font-bold">
-                              {qtyOf(p.id, null)}
+                  {filtered.map((p) => {
+                    const hasSizes =
+                      Array.isArray(p.sizes) && p.sizes.length > 0;
+                    // tổng qty của món (mọi size + combo, bao gồm cả quick-add không topping)
+                    const totalQty = Object.values(cart).reduce(
+                      (s, l) => (l.product_id === p.id ? s + l.qty : s),
+                      0
+                    );
+                    return (
+                      <div
+                        key={p.id}
+                        className={`group flex flex-col rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
+                          totalQty
+                            ? "border-sky-400 ring-2 ring-sky-100"
+                            : "border-slate-200"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-start justify-between">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-indigo-100 text-2xl">
+                            {emojiFor(p)}
+                          </div>
+                          {totalQty > 0 && (
+                            <span className="rounded-full bg-sky-600 px-2 py-0.5 text-xs font-bold text-white">
+                              {totalQty}
                             </span>
-                            <button
-                              onClick={() => add(p.id, null, 1)}
-                              className="h-7 w-7 rounded-lg bg-sky-600 text-lg leading-none text-white hover:bg-sky-700"
-                            >
-                              +
-                            </button>
+                          )}
+                        </div>
+                        <div className="text-sm font-bold leading-tight text-slate-800">
+                          {p.name}
+                        </div>
+                        {p.category && (
+                          <div className="text-xs text-slate-400">
+                            {p.category}
                           </div>
                         )}
+
+                        {hasSizes ? (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {p.sizes.map((sz: SizeOption) => {
+                              const q = qtyOfQuick(p.id, sz.name);
+                              return (
+                                <button
+                                  key={sz.name}
+                                  onClick={() => add(p.id, sz.name, [], 1)}
+                                  className={`rounded-lg border px-2 py-1 text-xs font-medium transition ${
+                                    q
+                                      ? "border-sky-500 bg-sky-50 text-sky-700"
+                                      : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"
+                                  }`}
+                                >
+                                  {sz.name} · {formatVND(sz.price)}
+                                  {q > 0 && (
+                                    <span className="ml-1 font-bold">×{q}</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="mt-auto flex items-center justify-between pt-3">
+                            <span className="text-sm font-bold text-slate-900">
+                              {formatVND(p.price)}
+                            </span>
+                            {qtyOfQuick(p.id, null) === 0 ? (
+                              <button
+                                onClick={() => add(p.id, null, [], 1)}
+                                className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+                              >
+                                Thêm
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => add(p.id, null, [], -1)}
+                                  className="h-7 w-7 rounded-lg bg-slate-100 text-lg leading-none text-slate-600 hover:bg-slate-200"
+                                >
+                                  −
+                                </button>
+                                <span className="w-5 text-center text-sm font-bold">
+                                  {qtyOfQuick(p.id, null)}
+                                </span>
+                                <button
+                                  onClick={() => add(p.id, null, [], 1)}
+                                  className="h-7 w-7 rounded-lg bg-sky-600 text-lg leading-none text-white hover:bg-sky-700"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Nút mở modal chọn topping (và size nếu có) */}
+                        {toppings.length > 0 && (
+                          <button
+                            onClick={() => setPicker(p)}
+                            className={`mt-2 self-start rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 ${
+                              hasSizes ? "" : "mt-auto"
+                            }`}
+                          >
+                            🍮 Thêm topping
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -292,11 +358,14 @@ export default function SellPage() {
                   {lines.map((l) => {
                     const p = products.find((x) => x.id === l.product_id);
                     if (!p) return null;
-                    const unit = priceOf(p, l.size);
+                    const unit = priceOfLine(l);
+                    const tNames = l.topping_ids
+                      .map((id) => toppingById.get(id)?.name)
+                      .filter(Boolean) as string[];
                     return (
                       <li
-                        key={lineKey(l.product_id, l.size)}
-                        className="flex items-center justify-between gap-2"
+                        key={lineKey(l.product_id, l.size, l.topping_ids)}
+                        className="flex items-start justify-between gap-2"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium text-slate-700">
@@ -307,17 +376,22 @@ export default function SellPage() {
                               Size: {l.size}
                             </div>
                           )}
+                          {tNames.length > 0 && (
+                            <div className="text-xs text-amber-700">
+                              🍮 {tNames.join(", ")}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => add(l.product_id, l.size, -1)}
+                            onClick={() => add(l.product_id, l.size, l.topping_ids, -1)}
                             className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200"
                           >
                             −
                           </button>
                           <span className="w-5 text-center font-bold">{l.qty}</span>
                           <button
-                            onClick={() => add(l.product_id, l.size, 1)}
+                            onClick={() => add(l.product_id, l.size, l.topping_ids, 1)}
                             className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200"
                           >
                             +
@@ -362,7 +436,20 @@ export default function SellPage() {
         </aside>
       </div>
 
-      <OrdersPanel products={products} reloadToken={reloadToken} />
+      <OrdersPanel
+        products={products}
+        toppings={toppings}
+        reloadToken={reloadToken}
+      />
+
+      {picker && (
+        <ItemPickerModal
+          product={picker}
+          toppings={toppings}
+          onClose={() => setPicker(null)}
+          onConfirm={onPick}
+        />
+      )}
     </div>
   );
 }

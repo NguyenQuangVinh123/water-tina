@@ -26,8 +26,9 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id   INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id INTEGER NOT NULL REFERENCES products(id),
   size       TEXT,                                -- tên size đã chọn (NULL nếu món không có size)
+  toppings   JSONB       NOT NULL DEFAULT '[]'::jsonb, -- snapshot [{id,name,price}, ...]
   qty        INTEGER NOT NULL DEFAULT 1,
-  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0      -- giá tại thời điểm bán
+  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0      -- giá tại thời điểm bán (đã gồm topping)
 );
 
 CREATE TABLE IF NOT EXISTS expenses (

@@ -42,6 +42,7 @@ export type OrderItem = {
   order_id: number;
   product_id: number;
   size: string | null;
+  toppings: ToppingSnapshot[];
   qty: number;
   unit_price: number;
 };
@@ -61,3 +62,6 @@ export type Topping = {
   is_active: boolean;
   created_at: string;
 };
+
+/** Snapshot topping lưu trong order_items.toppings */
+export type ToppingSnapshot = { id: number; name: string; price: number };

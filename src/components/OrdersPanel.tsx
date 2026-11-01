@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatVND, formatDate } from "@/lib/format";
 import { getAdminKey, adminHeaders } from "@/lib/adminClient";
-import type { Product } from "@/lib/db";
+import type { Product, Topping, ToppingSnapshot } from "@/lib/db";
 import OrderEditModal from "@/components/OrderEditModal";
 
 type OrderItem = {
   product_id: number;
   name: string;
   size: string | null;
+  toppings: ToppingSnapshot[];
   qty: number;
   unit_price: number;
 };
@@ -24,9 +25,11 @@ type Order = {
 
 export default function OrdersPanel({
   products,
+  toppings,
   reloadToken,
 }: {
   products: Product[];
+  toppings: Topping[];
   reloadToken: number;
 }) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -118,6 +121,11 @@ export default function OrdersPanel({
                         <span className="text-slate-400"> ({it.size})</span>
                       )}{" "}
                       <span className="text-slate-400">× {it.qty}</span>
+                      {Array.isArray(it.toppings) && it.toppings.length > 0 && (
+                        <span className="ml-1 text-xs text-amber-700">
+                          🍮 {it.toppings.map((t) => t.name).join(", ")}
+                        </span>
+                      )}
                     </span>
                     <span>{formatVND(Number(it.unit_price) * it.qty)}</span>
                   </li>
@@ -156,6 +164,7 @@ export default function OrdersPanel({
         <OrderEditModal
           order={editing}
           products={products}
+          toppings={toppings}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
