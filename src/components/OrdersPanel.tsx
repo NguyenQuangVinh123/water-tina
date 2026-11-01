@@ -9,6 +9,7 @@ import OrderEditModal from "@/components/OrderEditModal";
 type OrderItem = {
   product_id: number;
   name: string;
+  size: string | null;
   qty: number;
   unit_price: number;
 };
@@ -112,7 +113,11 @@ export default function OrdersPanel({
                 {o.items.map((it, i) => (
                   <li key={i} className="flex justify-between">
                     <span>
-                      {it.name} <span className="text-slate-400">× {it.qty}</span>
+                      {it.name}
+                      {it.size && (
+                        <span className="text-slate-400"> ({it.size})</span>
+                      )}{" "}
+                      <span className="text-slate-400">× {it.qty}</span>
                     </span>
                     <span>{formatVND(Number(it.unit_price) * it.qty)}</span>
                   </li>

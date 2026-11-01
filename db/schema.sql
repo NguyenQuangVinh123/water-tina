@@ -6,8 +6,9 @@
 CREATE TABLE IF NOT EXISTS products (
   id         SERIAL PRIMARY KEY,
   name       TEXT        NOT NULL,
-  price      NUMERIC(12, 2) NOT NULL DEFAULT 0,   -- giá bán
+  price      NUMERIC(12, 2) NOT NULL DEFAULT 0,   -- giá bán (giá thấp nhất nếu có size)
   category   TEXT,
+  sizes      JSONB       NOT NULL DEFAULT '[]'::jsonb, -- [{"name":"Nhỏ","price":20000}, ...]; rỗng = không có size
   is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id         SERIAL PRIMARY KEY,
   order_id   INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id INTEGER NOT NULL REFERENCES products(id),
+  size       TEXT,                                -- tên size đã chọn (NULL nếu món không có size)
   qty        INTEGER NOT NULL DEFAULT 1,
   unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0      -- giá tại thời điểm bán
 );

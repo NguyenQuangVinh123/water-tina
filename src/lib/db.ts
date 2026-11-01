@@ -15,12 +15,16 @@ export function getSql() {
   return neon(url);
 }
 
+/** Một lựa chọn size (kèm giá riêng) của món */
+export type SizeOption = { name: string; price: number };
+
 /** kiểu bản ghi */
 export type Product = {
   id: number;
   name: string;
   price: number;
   category: string | null;
+  sizes: SizeOption[];
   is_active: boolean;
   created_at: string;
 };
@@ -37,6 +41,7 @@ export type OrderItem = {
   id: number;
   order_id: number;
   product_id: number;
+  size: string | null;
   qty: number;
   unit_price: number;
 };
