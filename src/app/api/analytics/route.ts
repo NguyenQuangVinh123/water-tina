@@ -5,7 +5,7 @@ const TZ = "Asia/Ho_Chi_Minh";
 
 /**
  * GET /api/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD
- * Trả về: tổng doanh thu, số đơn, tổng chi, lợi nhuận,
+ * Trả về: tổng doanh thu, số đơn, số ly, tổng chi, lợi nhuận,
  * top sản phẩm bán chạy, chuỗi doanh thu theo ngày (lấp đầy mọi ngày, giờ VN),
  * và `compare` — số liệu kỳ trước liền kề cùng độ dài để tính % tăng/giảm.
  */
@@ -55,6 +55,13 @@ export async function GET(request: Request) {
     const [revRow] = await sql.query(
       `SELECT COALESCE(SUM(total),0)::float AS revenue, COUNT(*)::int AS orders
        FROM orders o ${orderFilter.where}`,
+      orderFilter.params
+    );
+    const [cupRow] = await sql.query(
+      `SELECT COALESCE(SUM(oi.qty),0)::int AS cups
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+       ${orderFilter.where}`,
       orderFilter.params
     );
     const [expRow] = await sql.query(
@@ -127,6 +134,14 @@ export async function GET(request: Request) {
            AND o.created_at < (($2::timestamp + interval '1 day') AT TIME ZONE '${TZ}')`,
         [pFrom, pTo]
       );
+      const [cCup] = await sql.query(
+        `SELECT COALESCE(SUM(oi.qty),0)::int AS cups
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE o.created_at >= ($1::timestamp AT TIME ZONE '${TZ}')
+           AND o.created_at < (($2::timestamp + interval '1 day') AT TIME ZONE '${TZ}')`,
+        [pFrom, pTo]
+      );
       const [cExp] = await sql.query(
         `SELECT COALESCE(SUM(amount),0)::float AS expenses
          FROM expenses e WHERE e.date >= $1::date AND e.date <= $2::date`,
@@ -138,6 +153,7 @@ export async function GET(request: Request) {
         range: { from: pFrom, to: pTo },
         revenue: cRevenue,
         orderCount: Number(cRev?.orders || 0),
+        cupCount: Number(cCup?.cups || 0),
         expenses: cExpenses,
         profit: cRevenue - cExpenses,
       };
@@ -147,6 +163,7 @@ export async function GET(request: Request) {
       range: { from, to },
       revenue,
       orderCount: Number(revRow?.orders || 0),
+      cupCount: Number(cupRow?.cups || 0),
       expenses,
       profit: revenue - expenses,
       topSellers,

@@ -11,6 +11,7 @@ type Expense = { id: number; amount: number; description: string | null; date: s
 type Stats = {
   revenue: number;
   orderCount: number;
+  cupCount: number;
   expenses: number;
   profit: number;
   topSellers: TopSeller[];
@@ -19,6 +20,7 @@ type Stats = {
     range: { from: string; to: string };
     revenue: number;
     orderCount: number;
+    cupCount: number;
     expenses: number;
     profit: number;
   } | null;
@@ -159,7 +161,7 @@ export default function AnalyticsPage() {
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {/* Thẻ tổng quan */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Card
           label="Doanh thu"
           value={stats ? formatVND(stats.revenue) : "—"}
@@ -175,6 +177,14 @@ export default function AnalyticsPage() {
           delta={stats && cmp ? pct(stats.orderCount, cmp.orderCount) : null}
           higherIsGood
           prevLabel={cmp ? `Kỳ trước: ${cmp.orderCount} đơn` : undefined}
+        />
+        <Card
+          label="Số ly"
+          value={stats ? String(stats.cupCount) : "—"}
+          tone="violet"
+          delta={stats && cmp ? pct(stats.cupCount, cmp.cupCount) : null}
+          higherIsGood
+          prevLabel={cmp ? `Kỳ trước: ${cmp.cupCount} ly` : undefined}
         />
         <Card
           label="Chi tiêu"
@@ -325,6 +335,7 @@ export default function AnalyticsPage() {
 const tones: Record<string, string> = {
   sky: "text-sky-700",
   slate: "text-slate-700",
+  violet: "text-violet-700",
   amber: "text-amber-700",
   emerald: "text-emerald-700",
   red: "text-red-700",
