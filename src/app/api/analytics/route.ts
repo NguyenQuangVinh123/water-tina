@@ -64,6 +64,13 @@ export async function GET(request: Request) {
        ${orderFilter.where}`,
       orderFilter.params
     );
+    const paymentBreakdown = await sql.query(
+      `SELECT payment_type, COALESCE(SUM(total),0)::float AS revenue, COUNT(*)::int AS orders
+       FROM orders o ${orderFilter.where}
+       GROUP BY payment_type
+       ORDER BY payment_type ASC`,
+      orderFilter.params
+    );
     const [expRow] = await sql.query(
       `SELECT COALESCE(SUM(amount),0)::float AS expenses
        FROM expenses e ${expFilter.where}`,
@@ -128,8 +135,10 @@ export async function GET(request: Request) {
       const pTo = shift(f, 1);
 
       const [cRev] = await sql.query(
-        `SELECT COALESCE(SUM(total),0)::float AS revenue, COUNT(*)::int AS orders
+        `SELECT COALESCE(SUM(total),0)::float AS revenue, COUNT(*)::int AS orders,
+                COALESCE(SUM(oi.qty),0)::int AS total_qty_sold
          FROM orders o
+         LEFT JOIN order_items oi ON oi.order_id = o.id
          WHERE o.created_at >= ($1::timestamp AT TIME ZONE '${TZ}')
            AND o.created_at < (($2::timestamp + interval '1 day') AT TIME ZONE '${TZ}')`,
         [pFrom, pTo]
@@ -168,6 +177,11 @@ export async function GET(request: Request) {
       profit: revenue - expenses,
       topSellers,
       daily,
+      paymentBreakdown: paymentBreakdown.map((p: any) => ({
+        paymentType: Number(p.payment_type),
+        revenue: Number(p.revenue),
+        orders: Number(p.orders),
+      })),
       compare,
     });
   } catch (e: any) {

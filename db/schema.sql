@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name TEXT,
   note          TEXT,
   total         NUMERIC(12, 2) NOT NULL DEFAULT 0, -- tổng tiền đơn
+  payment_type  INTEGER NOT NULL DEFAULT 1,        -- 1 = Tiền mặt, 2 = Chuyển khoản
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

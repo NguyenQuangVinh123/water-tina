@@ -20,6 +20,7 @@ type EditingOrder = {
   id: number;
   customer_name: string | null;
   note: string | null;
+  payment_type?: number;
   items: {
     product_id: number;
     size: string | null;
@@ -52,6 +53,7 @@ export default function OrderEditModal({
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [customer, setCustomer] = useState(order.customer_name || "");
   const [note, setNote] = useState(order.note || "");
+  const [paymentType, setPaymentType] = useState(order.payment_type || 1);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -136,6 +138,7 @@ export default function OrderEditModal({
         id: order.id,
         customer_name: customer,
         note,
+        payment_type: paymentType,
         items,
       }),
     });
@@ -173,6 +176,33 @@ export default function OrderEditModal({
           placeholder="Tên khách"
           className="mb-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
         />
+        <div className="mb-4">
+          <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5">
+            Loại thanh toán
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPaymentType(1)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                paymentType === 1
+                  ? "bg-sky-600 text-white"
+                  : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              💵 Tiền mặt
+            </button>
+            <button
+              onClick={() => setPaymentType(2)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                paymentType === 2
+                  ? "bg-sky-600 text-white"
+                  : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              🏦 Chuyển khoản
+            </button>
+          </div>
+        </div>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}

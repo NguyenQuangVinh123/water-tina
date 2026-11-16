@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, forwardRef } from "react";
 import { formatVND, formatDate } from "@/lib/format";
 import { getAdminKey, adminHeaders } from "@/lib/adminClient";
 import type { Product, Topping, ToppingSnapshot } from "@/lib/db";
@@ -18,12 +18,13 @@ type Order = {
   id: number;
   customer_name: string | null;
   note: string | null;
+  payment_type: number;
   total: number;
   created_at: string;
   items: OrderItem[];
 };
 
-export default function OrdersPanel({
+const OrdersPanel = forwardRef(function OrdersPanel({
   products,
   toppings,
   reloadToken,
@@ -31,7 +32,7 @@ export default function OrdersPanel({
   products: Product[];
   toppings: Topping[];
   reloadToken: number;
-}) {
+}, ref: any) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [admin, setAdmin] = useState(false);
   const [editing, setEditing] = useState<Order | null>(null);
@@ -65,7 +66,7 @@ export default function OrdersPanel({
   }
 
   return (
-    <section>
+    <section ref={ref}>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-800">Đơn gần đây</h2>
         {orders.length > 0 && (
@@ -112,6 +113,16 @@ export default function OrdersPanel({
                 <p className="mt-1 text-xs italic text-slate-500">📝 {o.note}</p>
               )}
 
+              <div className="mt-1 flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  o.payment_type === 2
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "bg-green-50 text-green-700"
+                }`}>
+                  {o.payment_type === 2 ? "🏦 Chuyển khoản" : "💵 Tiền mặt"}
+                </span>
+              </div>
+
               <ul className="mt-2 flex-1 space-y-0.5 text-sm text-slate-600">
                 {o.items.map((it, i) => (
                   <li key={i} className="flex justify-between">
@@ -134,22 +145,18 @@ export default function OrdersPanel({
 
               <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
                 <div className="flex gap-3">
-                  {admin && (
-                    <>
-                      <button
-                        onClick={() => setEditing(o)}
-                        className="text-sm font-medium text-sky-600 hover:underline"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => remove(o.id)}
-                        className="text-sm font-medium text-red-500 hover:underline"
-                      >
-                        Xóa
-                      </button>
-                    </>
-                  )}
+                  <button
+                    onClick={() => setEditing(o)}
+                    className="text-sm font-medium text-sky-600 hover:underline"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => remove(o.id)}
+                    className="text-sm font-medium text-red-500 hover:underline"
+                  >
+                    Xóa
+                  </button>
                 </div>
                 <span className="text-sm font-bold text-slate-900">
                   {formatVND(o.total)}
@@ -174,4 +181,6 @@ export default function OrdersPanel({
       )}
     </section>
   );
-}
+});
+
+export default OrdersPanel;

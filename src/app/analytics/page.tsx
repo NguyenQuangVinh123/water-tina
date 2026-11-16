@@ -16,6 +16,7 @@ type Stats = {
   profit: number;
   topSellers: TopSeller[];
   daily: Daily[];
+  paymentBreakdown: { paymentType: number; revenue: number; orders: number }[];
   compare: {
     range: { from: string; to: string };
     revenue: number;
@@ -87,12 +88,13 @@ export default function AnalyticsPage() {
     if (ready) load();
   }, [ready, load]);
 
-  // Đặt khoảng ngày mặc định (7 ngày gần nhất) sau khi mount,
+  // Đặt khoảng ngày mặc định (hôm nay) sau khi mount,
   // tránh tính Date khi prerender trang client.
   useEffect(() => {
     const now = new Date();
-    setTo(isoDay(now));
-    setFrom(isoDay(new Date(now.getTime() - 6 * 864e5)));
+    const today = isoDay(now);
+    setFrom(today);
+    setTo(today);
   }, []);
 
   async function addExpense(e: React.FormEvent) {
@@ -151,17 +153,39 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {presets.map((p) => (
-          <button key={p.label} onClick={p.run} className={presetCls}>
-            {p.label}
-          </button>
-        ))}
+        {presets.map((p) => {
+          const isActive = (() => {
+            const today = isoDay(new Date());
+            const week7DaysAgo = isoDay(new Date(new Date().getTime() - 6 * 864e5));
+            const monthStart = isoDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+            
+            if (p.label === "Hôm nay") return from === today && to === today;
+            if (p.label === "7 ngày") return from === week7DaysAgo && to === today;
+            if (p.label === "Tháng này") return from === monthStart && to === today;
+            if (p.label === "Tất cả") return from === "" && to === "";
+            return false;
+          })();
+          
+          return (
+            <button
+              key={p.label}
+              onClick={p.run}
+              className={`shrink-0 whitespace-nowrap rounded-full border-2 px-3 py-1.5 text-xs font-medium transition ${
+                isActive
+                  ? "border-sky-600 bg-sky-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:text-sky-700"
+              }`}
+            >
+              {isActive ? "✓ " : ""}{p.label}
+            </button>
+          );
+        })}
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {/* Thẻ tổng quan */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Card
           label="Doanh thu"
           value={stats ? formatVND(stats.revenue) : "—"}
@@ -207,6 +231,31 @@ export default function AnalyticsPage() {
           prevLabel={cmp ? `Kỳ trước: ${formatVND(cmp.profit)}` : undefined}
         />
       </div>
+
+      {/* Loại thanh toán */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-3 font-semibold text-slate-800">Loại thanh toán</h2>
+        {!stats || stats.paymentBreakdown.length === 0 ? (
+          <p className="text-sm text-slate-400">Chưa có dữ liệu.</p>
+        ) : (
+          <div className="space-y-2">
+            {stats.paymentBreakdown.map((pb) => {
+              const label = pb.paymentType === 1 ? "💵 Tiền mặt" : "🏦 Chuyển khoản";
+              const bgColor = pb.paymentType === 1 ? "bg-green-50" : "bg-indigo-50";
+              const textColor = pb.paymentType === 1 ? "text-green-700" : "text-indigo-700";
+              return (
+                <div key={pb.paymentType} className={`flex items-center justify-between rounded-lg ${bgColor} p-3`}>
+                  <div>
+                    <div className={`text-sm font-semibold ${textColor}`}>{label}</div>
+                    <div className="text-xs text-slate-500">{pb.orders} đơn</div>
+                  </div>
+                  <div className={`text-lg font-bold ${textColor}`}>{formatVND(pb.revenue)}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
       {cmp && (
         <p className="-mt-3 text-xs text-slate-400">
           So với kỳ trước ({cmp.range.from} → {cmp.range.to})

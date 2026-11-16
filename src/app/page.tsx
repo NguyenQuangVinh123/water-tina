@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import type { Product, SizeOption, Topping } from "@/lib/db";
 import { formatVND } from "@/lib/format";
 import OrdersPanel from "@/components/OrdersPanel";
@@ -57,6 +57,7 @@ export default function SellPage() {
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
+  const [paymentType, setPaymentType] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,6 +65,7 @@ export default function SellPage() {
   const [reloadToken, setReloadToken] = useState(0);
   const [picker, setPicker] = useState<Product | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const ordersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([
@@ -185,7 +187,7 @@ export default function SellPage() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note, items }),
+        body: JSON.stringify({ note, payment_type: paymentType, items }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Tạo đơn thất bại");
@@ -211,9 +213,18 @@ export default function SellPage() {
               <h1 className="text-xl font-extrabold tracking-tight text-slate-800">
                 Chọn đồ uống
               </h1>
-              <span className="shrink-0 text-sm text-slate-400">
-                {filtered.length} món
-              </span>
+              <div className="flex items-center gap-2" suppressHydrationWarning>
+                <span className="shrink-0 text-sm text-slate-400">
+                  {filtered.length} món
+                </span>
+                <button
+                  onClick={() => ordersRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  className="shrink-0 text-sm font-medium text-sky-600 hover:text-sky-700"
+                  title="Scroll xuống đơn gần đây"
+                >
+                  ⬇ Đơn gần đây
+                </button>
+              </div>
             </div>
             <div className="relative mt-2">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -467,6 +478,34 @@ export default function SellPage() {
                 <span className="text-sky-700">{formatVND(total)}</span>
               </div>
 
+              <div className="mb-3">
+                <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5">
+                  Loại thanh toán
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPaymentType(1)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      paymentType === 1
+                        ? "bg-sky-600 text-white"
+                        : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    💵 Tiền mặt
+                  </button>
+                  <button
+                    onClick={() => setPaymentType(2)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      paymentType === 2
+                        ? "bg-sky-600 text-white"
+                        : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    🏦 Chuyển khoản
+                  </button>
+                </div>
+              </div>
+
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -493,6 +532,7 @@ export default function SellPage() {
       </div>
 
       <OrdersPanel
+        ref={ordersRef}
         products={products}
         toppings={toppings}
         reloadToken={reloadToken}
@@ -622,7 +662,34 @@ export default function SellPage() {
               )}
             </div>
 
-            <div className="border-t border-slate-100 p-4">
+            <div className="border-t border-slate-100 p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5">
+                  Loại thanh toán
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPaymentType(1)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      paymentType === 1
+                        ? "bg-sky-600 text-white"
+                        : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    💵 Tiền mặt
+                  </button>
+                  <button
+                    onClick={() => setPaymentType(2)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      paymentType === 2
+                        ? "bg-sky-600 text-white"
+                        : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    🏦 Chuyển khoản
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={checkout}
                 disabled={saving || cartCount === 0}
