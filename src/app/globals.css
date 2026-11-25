@@ -23,3 +23,7 @@ body {
     Arial, sans-serif;
   min-height: 100vh;
 }
+
+.flex-balance {
+  flex-wrap: balance;
+}

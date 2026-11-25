@@ -305,7 +305,7 @@ export default function AnalyticsPage() {
           {!stats || stats.daily.length === 0 ? (
             <p className="text-sm text-slate-400">Chưa có dữ liệu.</p>
           ) : (
-            <div className="flex items-end gap-1">
+            <div className="flex items-end gap-1 flex-balance">
               {stats.daily.map((d) => {
                 const pct = Math.max(2, (d.revenue / maxDaily) * 100);
                 return (
