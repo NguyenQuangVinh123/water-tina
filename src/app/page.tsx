@@ -256,7 +256,7 @@ export default function SellPage() {
           )}
 
           {!loaded ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
@@ -275,7 +275,7 @@ export default function SellPage() {
                   Không tìm thấy món nào khớp "{query}".
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {filtered.map((p) => {
                     const hasSizes =
                       Array.isArray(p.sizes) && p.sizes.length > 0;
